@@ -130,16 +130,18 @@ public final class SharedObjectRegistry: Sendable {
     // Attach the C++ shared-object native state. Because `expo::SharedObject::NativeState`
     // inherits from `expo::EventEmitter::NativeState`, later `addListener` calls see an
     // existing native state (via the inheritance check) and don't overwrite it.
-    try? appContext?.runtime.withUnsafePointee { runtimePointer in
-      jsObject.asValue().withUnsafePointee { valuePointer in
-        SharedObjectUtils.setNativeState(
-          runtimePointer: runtimePointer,
-          valuePointer: UnsafeMutableRawPointer(mutating: valuePointer),
-          objectId: id,
-          releaser: delete(_:)
-        )
-      }
+    let releaser: ObjectReleaser = { [weak self] id in
+      self?.delete(id)
     }
+    let nativeState = JavaScriptNativeState { context, deallocator in
+      return SharedObjectUtils.makeSharedObjectNativeStatePtr(
+        objectId: id,
+        releaser: releaser,
+        context: context,
+        contextDeallocator: deallocator
+      )
+    }
+    jsObject.setNativeState(nativeState)
 
     return id
   }
