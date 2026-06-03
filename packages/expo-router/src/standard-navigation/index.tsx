@@ -135,14 +135,14 @@ export function unstable_integrateWithRouter<
     const { dispatch } = navigation;
 
     const derivedProps = useMemo<Partial<NavigatorProps>>(
-      () => options?.createProps?.({ state, dispatch }) ?? {},
-      [state, dispatch, options]
+      () => options?.createProps?.({ state, dispatch, navigation }) ?? {},
+      [state, dispatch, navigation, options]
     );
 
     const standardArgs: NavigatorArgs<NavigatorOptions, EventMap> = {
       state: useStandardState(state),
       descriptors,
-      actions: useStandardActions(navigation),
+      actions: useStandardActions(navigation, state.key),
       emitter: useStandardEmitter(navigation),
     };
 
@@ -240,7 +240,6 @@ function partitionNavigatorProps<
 
 function assertStandardNavigator(navigator: unknown): asserts navigator is {
   type: typeof STANDARD_NAVIGATOR_TYPE;
-  version: typeof SUPPORTED_VERSION;
 } {
   if (navigator == null) {
     throw new Error(
@@ -262,10 +261,15 @@ function assertStandardNavigator(navigator: unknown): asserts navigator is {
   }
 
   if (version !== SUPPORTED_VERSION) {
-    throw new Error(
-      `Could not integrate a standard navigator because it targets the standard-navigation v${version} contract, ` +
-        `but this version of expo-router only supports v${SUPPORTED_VERSION}. ` +
-        'Align the installed `standard-navigation` version with your expo-router version, ' +
+    // This is a warning rather than a hard error on purpose: the standard-navigation contract is
+    // versioned by the `standard-navigation` package, not by expo-router, and integration is likely
+    // to keep working across adjacent versions. Blocking here would needlessly break those cases.
+    // If a mismatch does cause problems, this points at the version skew as the likely cause.
+    console.warn(
+      `This standard navigator targets the standard-navigation v${version} contract, ` +
+        `but this version of expo-router was built against v${SUPPORTED_VERSION}. ` +
+        'Integration may still work, but if you hit unexpected navigation behavior, ' +
+        'align the installed `standard-navigation` version with your expo-router version, ' +
         'or check the standard-navigation release notes for migration steps.'
     );
   }

@@ -385,10 +385,12 @@ describe('assertStandardNavigator (via unstable_integrateWithRouter)', () => {
     'This value is likely not a standard-navigation navigator. ' +
     'Create it with `createStandardNavigator(...)` from the `standard-navigation` package, ' +
     'or use `unstable_createStandardRouterNavigator(NavigatorContent, router)`.';
+  // Kept in sync with the warning logged in assertStandardNavigator (index.tsx).
   const wrongVersionMessage = (version: number) =>
-    `Could not integrate a standard navigator because it targets the standard-navigation v${version} contract, ` +
-    'but this version of expo-router only supports v1. ' +
-    'Align the installed `standard-navigation` version with your expo-router version, ' +
+    `This standard navigator targets the standard-navigation v${version} contract, ` +
+    'but this version of expo-router was built against v1. ' +
+    'Integration may still work, but if you hit unexpected navigation behavior, ' +
+    'align the installed `standard-navigation` version with your expo-router version, ' +
     'or check the standard-navigation release notes for migration steps.';
 
   it('throws when the navigator is null', () => {
@@ -413,22 +415,34 @@ describe('assertStandardNavigator (via unstable_integrateWithRouter)', () => {
     ).toThrow(new Error(wrongTypeMessage('"weird"')));
   });
 
-  it('throws when the navigator version is unsupported', () => {
-    expect(() =>
-      unstable_integrateWithRouter(
-        { type: 'standard', version: 2, NavigatorContent: () => null } as any,
-        TabRouter
-      )
-    ).toThrow(new Error(wrongVersionMessage(2)));
+  it('warns but does not throw when the navigator version is unsupported', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      expect(() =>
+        unstable_integrateWithRouter(
+          { type: 'standard', version: 2, NavigatorContent: () => null } as any,
+          TabRouter
+        )
+      ).not.toThrow();
+      expect(warn).toHaveBeenCalledWith(wrongVersionMessage(2));
+    } finally {
+      warn.mockRestore();
+    }
   });
 
-  it('throws a version error for a falsy version (0)', () => {
-    expect(() =>
-      unstable_integrateWithRouter(
-        { type: 'standard', version: 0, NavigatorContent: () => null } as any,
-        TabRouter
-      )
-    ).toThrow(new Error(wrongVersionMessage(0)));
+  it('warns for a falsy version (0)', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      expect(() =>
+        unstable_integrateWithRouter(
+          { type: 'standard', version: 0, NavigatorContent: () => null } as any,
+          TabRouter
+        )
+      ).not.toThrow();
+      expect(warn).toHaveBeenCalledWith(wrongVersionMessage(0));
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('accepts a navigator produced by the real createStandardNavigator', () => {

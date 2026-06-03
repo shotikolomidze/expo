@@ -1,5 +1,5 @@
 import type { createStandardNavigator, NavigatorArgs } from 'standard-navigation';
-import type { DefaultNavigatorOptions, DefaultRouterOptions, NavigationAction, NavigationState, ParamListBase } from '../react-navigation/native';
+import type { DefaultNavigatorOptions, DefaultRouterOptions, NavigationAction, NavigationHelpers, NavigationState, ParamListBase } from '../react-navigation/native';
 import type { GoBackAction, NavigateAction } from '../react-navigation/routers/CommonActions';
 export type StandardNavigatorEventMapBase = Record<string, {
     data: object | undefined;
@@ -11,6 +11,14 @@ export type StandardUseNavigationBuilderOptions<State extends NavigationState, N
 export interface StandardNavigatorCreatePropsFactoryDeps<State extends NavigationState> {
     state: State;
     dispatch: (action: NavigationAction) => void;
+    /**
+     * The navigator's navigation helpers from `useNavigationBuilder`.
+     *
+     * @internal This is internal and may change (or be removed) between releases without notice. Prefer the
+     * `state` and `actions` passed to `NavigatorContent`; reach for this only for capabilities the standard
+     * contract does not expose (for example, `isFocused`).
+     */
+    navigation: NavigationHelpers<ParamListBase>;
 }
 export interface IntegrateWithRouterOptions<State extends NavigationState = NavigationState, NavigatorProps extends object = object> {
     /**
